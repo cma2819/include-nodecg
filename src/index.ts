@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import {promisify} from 'util';
+import { promisify } from 'util';
 import execa from 'execa';
 import del from 'del';
 import appRootPath from 'app-root-path';
@@ -15,10 +15,10 @@ const symlink = promisify(fs.symlink);
 const readdir = promisify(fs.readdir);
 const mkdir = promisify(fs.mkdir);
 
-export const {name: bundleName} = appRootPath.require('package.json');
+export const { name: bundleName } = appRootPath.require('package.json');
 
 export const bowerInstall = async (): Promise<void> => {
-	const nodecgDirFiles = await readdir(nodecgPath, {encoding: 'utf8'});
+	const nodecgDirFiles = await readdir(nodecgPath, { encoding: 'utf8' });
 	if (!nodecgDirFiles.includes('bower.json')) {
 		return;
 	}
@@ -27,17 +27,25 @@ export const bowerInstall = async (): Promise<void> => {
 		shouldAllowRoot
 			? 'bower install --production --allow-root'
 			: 'bower install --production',
-		{preferLocal: true, cwd: nodecgPath},
+		{ preferLocal: true, cwd: nodecgPath },
 	);
 	bowerProcess.stderr.pipe(process.stderr);
 	await bowerProcess;
 };
 
 export const linkBundle = async (): Promise<void> => {
-	const bundlePath = path.join(nodecgPath, 'bundles', bundleName);
+	const sourceBundlePath = appRootPath.resolve('bundles');
+	try {
+		await readdir(sourceBundlePath);
+	} catch (error) {
+		if (error.code === 'ENOENT') {
+			await mkdir(sourceBundlePath);
+		}
+	}
+	const bundlePath = path.join(nodecgPath, 'bundles');
 	await del(bundlePath);
 	await symlink(
-		path.relative(path.dirname(bundlePath), appRootPath.path),
+		path.relative(path.dirname(bundlePath), sourceBundlePath),
 		bundlePath,
 		'dir',
 	);
