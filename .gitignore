@@ -1,4 +1,5 @@
-lib
+# disable ignore "lib" because make public on github 
+#lib
 
 # Logs
 logs
